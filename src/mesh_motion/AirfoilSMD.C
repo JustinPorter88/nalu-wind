@@ -45,7 +45,15 @@ AirfoilSMD::AirfoilSMD(const YAML::Node& node)
 
   std::vector<double> x_init;
   get_required(node, "x_init", x_init);
-  x_n_.x() = x_init[0]; x_n_.y() = x_init[1]; x_n_.z() = x_init[2]; 
+  x_n_.x() = 0.0; x_n_.y() = 0.0; x_n_.z() = 0.0; 
+
+  std::vector<double> freq_init;
+  get_required(node, "freq", freq_init); //frequency in Hz
+  freq_.x() = freq_init[0]; freq_.y() = freq_init[1]; freq_.z() = freq_init[2]; 
+
+  std::vector<double> amp_init;
+  get_required(node, "amp", amp_init); // amplitudes
+  amp_.x() = amp_init[0]; amp_.y() = amp_init[1]; amp_.z() = amp_init[2]; 
 
   std::vector<double> xdot_init(3,0.0);
   get_if_present(node, "xdot_init", xdot_init);
@@ -147,6 +155,13 @@ AirfoilSMD::predict_states() {
   xdot_np1_ = xdot_n_ + dt_*(1.5*a_n_ - 0.5*a_nm1_);
 
 
+  x_np1_[0] = amp_[0]*std::sin(2*M_PI*freq_[0]*(tstep_+1)*dt_);
+  x_np1_[1] = amp_[1]*std::sin(2*M_PI*freq_[1]*(tstep_+1)*dt_);
+  x_np1_[2] = amp_[2]*std::sin(2*M_PI*freq_[2]*(tstep_+1)*dt_);
+
+  xdot_np1_[0] = 2*M_PI*freq_[0]*amp_[0]*std::cos(2*M_PI*freq_[0]*(tstep_+1)*dt_);
+  xdot_np1_[1] = 2*M_PI*freq_[1]*amp_[1]*std::cos(2*M_PI*freq_[1]*(tstep_+1)*dt_);
+  xdot_np1_[2] = 2*M_PI*freq_[2]*amp_[2]*std::cos(2*M_PI*freq_[2]*(tstep_+1)*dt_);
 }
 
 void
@@ -160,9 +175,6 @@ AirfoilSMD::advance_timestep() {
 
   xdot_nm1_ = xdot_n_;
   xdot_n_ = xdot_np1_;
-
-  a_nm1_ = a_n_;
-  a_n_ = a_np1_;
 
   tstep_ += 1;
 }
@@ -185,25 +197,15 @@ AirfoilSMD::update_timestep(vs::Vector F_np1, vs::Vector M_np1) {
   vs::Tensor Left;
   vs::Vector right;
 
-  Left = M_ + (((1 + alpha_)*dt_*gamma)*C_) + (((1+alpha_)*dt_*dt_*beta)*K_);
+  x_np1_[0] = amp_[0]*std::sin(2*M_PI*freq_[0]*(tstep_+1)*dt_);
+  x_np1_[1] = amp_[1]*std::sin(2*M_PI*freq_[1]*(tstep_+1)*dt_);
+  x_np1_[2] = amp_[2]*std::sin(2*M_PI*freq_[2]*(tstep_+1)*dt_);
 
-  // Create force vector from appropriate force and moment entries
-  temp_fnp1[0] = F_np1[0];
-  temp_fnp1[1] = F_np1[1];
-  temp_fnp1[2] = M_np1[2];
+  xdot_np1_[0] = 2*M_PI*freq_[0]*amp_[0]*std::cos(2*M_PI*freq_[0]*(tstep_+1)*dt_);
+  xdot_np1_[1] = 2*M_PI*freq_[1]*amp_[1]*std::cos(2*M_PI*freq_[1]*(tstep_+1)*dt_);
+  xdot_np1_[2] = 2*M_PI*freq_[2]*amp_[2]*std::cos(2*M_PI*freq_[2]*(tstep_+1)*dt_);
 
-  f_np1_ = temp_fnp1;
 
-  right = (C_ & (-1.0*(xdot_n_ + (1 + alpha_)*dt_*(1-gamma)*a_n_)))
-          + (K_ & (-1.0*(x_n_ + (1 + alpha_)*dt_*xdot_n_ + (1 + alpha_)*0.5*dt_*dt_*(1 - 2*beta)*a_n_)))
-          + (T_ & ( ((1 + alpha_) * f_np1_) -( alpha_ * f_n_) ));
-   
-
-  // Solve the matrix problem to get a_np1_
-  a_np1_ = Left.inv() & right;
-
-  x_np1_ = x_n_ + dt_*xdot_n_ + 0.5*dt_*dt_*((1 - 2*beta)*a_n_ + 2*beta*a_np1_);
-  xdot_np1_ = xdot_n_ + dt_*((1 - gamma)*a_n_ + gamma*a_np1_);
 }
 
 void

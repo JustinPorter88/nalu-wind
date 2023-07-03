@@ -81,6 +81,9 @@ private:
 
     vs::Vector origin_;
 
+    vs::Vector freq_;
+    vs::Vector amp_;
+
     double dt_{-1.0};
     
     size_t tstep_ {0};
