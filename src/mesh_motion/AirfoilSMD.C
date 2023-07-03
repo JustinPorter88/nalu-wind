@@ -1,5 +1,6 @@
 #include "mesh_motion/AirfoilSMD.h"
 #include "NaluParsing.h"
+#include <NaluEnv.h>
 
 #include "netcdf.h"
 
@@ -197,14 +198,18 @@ AirfoilSMD::update_timestep(vs::Vector F_np1, vs::Vector M_np1) {
   vs::Tensor Left;
   vs::Vector right;
 
-  x_np1_[0] = amp_[0]*std::sin(2*M_PI*freq_[0]*(tstep_+1)*dt_);
-  x_np1_[1] = amp_[1]*std::sin(2*M_PI*freq_[1]*(tstep_+1)*dt_);
-  x_np1_[2] = amp_[2]*std::sin(2*M_PI*freq_[2]*(tstep_+1)*dt_);
+  
+  NaluEnv::self().naluOutputP0() << "AirfoilSMD: Update timestep: tstep_ = " << tstep_ << std::endl;
 
-  xdot_np1_[0] = 2*M_PI*freq_[0]*amp_[0]*std::cos(2*M_PI*freq_[0]*(tstep_+1)*dt_);
-  xdot_np1_[1] = 2*M_PI*freq_[1]*amp_[1]*std::cos(2*M_PI*freq_[1]*(tstep_+1)*dt_);
-  xdot_np1_[2] = 2*M_PI*freq_[2]*amp_[2]*std::cos(2*M_PI*freq_[2]*(tstep_+1)*dt_);
+  x_np1_[0] = amp_[0] * stk::math::sin(2.0 * M_PI * freq_[0] * (tstep_ + 1) * dt_);
+  x_np1_[1] = amp_[1] * stk::math::sin(2.0 * M_PI * freq_[1] * (tstep_ + 1) * dt_);
+  x_np1_[2] = amp_[2] * stk::math::sin(2.0 * M_PI * freq_[2] * (tstep_ + 1) * dt_);
 
+  xdot_np1_[0] = 2.0 * M_PI * freq_[0] * amp_[0] * stk::math::cos(2.0 * M_PI * freq_[0] * (tstep_ + 1) * dt_);
+  xdot_np1_[1] = 2.0 * M_PI * freq_[1] * amp_[1] * stk::math::cos(2.0 * M_PI * freq_[1] * (tstep_ + 1) * dt_);
+  xdot_np1_[2] = 2.0 * M_PI * freq_[2] * amp_[2] * stk::math::cos(2.0 * M_PI * freq_[2] * (tstep_ + 1) * dt_);
+
+  NaluEnv::self().naluOutputP0() << "AirfoilSMD: Computing sin omega t displacements at tstep_ =  " << tstep_ << std::endl;
 
 }
 
@@ -335,7 +340,6 @@ AirfoilSMD::write_nc_def_loads(const double cur_time)
   check_nc_error(ierr, "nc_open");
   ierr = nc_enddef(ncid);
 
-  std::cerr << "tstep = " << tstep_ << std::endl;
   {
     size_t count0 = 1;
     ierr = nc_put_vara_double(ncid, nc_var_ids_["time"], &tstep_, &count0, &cur_time);

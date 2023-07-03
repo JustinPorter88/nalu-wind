@@ -234,8 +234,8 @@ public:
 
     // v = vtrans + \omega \cross \x
     vel[0] = trans_vel[0] + rot_vel[1] * rel_coord[2] - rot_vel[2] * rel_coord[1];
-    vel[1] = trans_vel[0] + rot_vel[2] * rel_coord[0] - rot_vel[0] * rel_coord[2];
-    vel[2] = trans_vel[0] + rot_vel[0] * rel_coord[1] - rot_vel[1] * rel_coord[0];
+    vel[1] = trans_vel[1] + rot_vel[2] * rel_coord[0] - rot_vel[0] * rel_coord[2];
+    vel[2] = trans_vel[2] + rot_vel[0] * rel_coord[1] - rot_vel[1] * rel_coord[0];
     return vel;
   }
       
