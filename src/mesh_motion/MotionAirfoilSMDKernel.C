@@ -29,6 +29,8 @@ void MotionAirfoilSMDKernel::load(const YAML::Node& node)
   if (node["axis"]) {
       for (int d = 0; d < nalu_ngp::NDimMax; ++d)
           axis_[d] = node["axis"][d].as<double>();
+      if ( (axis_[0] != 0.0) || (axis_[1] != 0.0) || (axis_[2] != 1.0) )
+        throw std::runtime_error("MotionAirfoilSMDKernel: Implementation does not correctly use user input axis." );
   } else
       NaluEnv::self().naluOutputP0()
           << "MotionAirfoilSMDKernel: axis of rotation not supplied; will use 0,0,1"
@@ -134,6 +136,8 @@ MotionAirfoilSMDKernel::compute_velocity(
   unitVec[1] = axis_[1] / mag;
   unitVec[2] = axis_[2] / mag;
 
+  NaluEnv::self().naluOutputP0() << "MotionAirfoilSMDKernel: inside compute_velocity(), which appears to be wrong" << std::endl;
+
   // transform the origin of the rotating body
   mm::ThreeDVecType transOrigin;
   for (int d = 0; d < nalu_ngp::NDimMax; d++) {
@@ -167,6 +171,8 @@ double MotionAirfoilSMDKernel::get_cur_angle(const double time)
   // determine current angle
   angle_ = amplt_ * stk::math::sin(omega_ * (motionTime-startTime_) + phase_ );
 
+  NaluEnv::self().naluOutputP0() << "MotionAirfoilSMDKernel: generating wrong angle_ = " << angle_ << std::endl;
+
   return angle_;
 }
 
@@ -176,6 +182,8 @@ double MotionAirfoilSMDKernel::get_cur_ang_vel(const double time)
   // determine current angular velocity
   ang_vel_ = amplt_ * omega_ *
       stk::math::cos(omega_ * (motionTime-startTime_) + phase_ );
+
+  NaluEnv::self().naluOutputP0() << "MotionAirfoilSMDKernel: generating wrong ang_vel = " << ang_vel_ << std::endl;
 
   return ang_vel_;
 }
