@@ -198,7 +198,6 @@ AirfoilSMD::update_timestep(vs::Vector F_np1, vs::Vector M_np1) {
   vs::Tensor Left;
   vs::Vector right;
 
-  
   NaluEnv::self().naluOutputP0() << "AirfoilSMD: Update timestep: tstep_ = " << tstep_ << std::endl;
 
   x_np1_[0] = amp_[0] * stk::math::sin(2.0 * M_PI * freq_[0] * (tstep_ + 1) * dt_);

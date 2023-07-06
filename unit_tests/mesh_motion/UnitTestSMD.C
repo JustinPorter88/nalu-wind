@@ -20,7 +20,6 @@ TEST(meshMotion, airfoil_smd_update)
                               "damping_matrix: [300.0, 8.0, -70.0, 8.0, 200.0, 20.0, -70.0, 20.0, 3700.0] \n"
                               "x_init: [0.1, 0.2, 0.01] \n"
                               "loads_scale: 0.75 \n"
-                              "centroid: [0.3,0.5,0.0] \n"
                               "alpha : -0.05 \n";
 
   YAML::Node smd_node = YAML::Load(smd_info);
@@ -81,7 +80,6 @@ TEST(meshMotion, airfoil_smd_update2)
                               "a_init: [0.3, 0.2, 0.0] \n"
                               "f_init: [200.0, 400.0, 50.0] \n"
                               "loads_scale: 0.75 \n"
-                              "centroid: [0.3,0.5,0.0] \n"
                               "alpha : -0.05 \n";
 
 
@@ -145,7 +143,6 @@ TEST(meshMotion, airfoil_smd_predict)
                               "a_nm1: [0.5, -8.0, 2.0] \n"
                               "f_init: [200.0, 400.0, 50.0] \n"
                               "loads_scale: 0.75 \n"
-                              "centroid: [0.3,0.5,0.0] \n"
                               "alpha : -0.05 \n";
 
 
@@ -199,7 +196,6 @@ TEST(meshMotion, airfoil_smd_advance)
                               "a_init: [0.3, 0.2, 0.0] \n"
                               "f_init: [200.0, 400.0, 50.0] \n"
                               "loads_scale: 0.75 \n"
-                              "centroid: [0.3,0.5,0.0] \n"
                               "alpha : -0.05 \n";
 
   YAML::Node smd_node = YAML::Load(smd_info);

@@ -6,6 +6,12 @@
 #include "mesh_motion/MotionScalingKernel.h"
 #include "mesh_motion/MotionTranslationKernel.h"
 
+#include "mesh_motion/NgpMotion.h"
+#include "mesh_motion/FrameBase.h"
+#include "mesh_motion/SMD.h"
+#include "mesh_motion/AirfoilSMD.h"
+#include "mesh_motion/MotionAirfoilSMDKernel.h"
+
 #include "UnitTestRealm.h"
 
 namespace {
@@ -71,6 +77,97 @@ TEST(meshMotion, rotation_omega)
   EXPECT_NEAR(vel[1], gold_norm_vy, testTol);
   EXPECT_NEAR(vel[2], gold_norm_vz, testTol);
 }
+
+namespace sierra {
+namespace nalu {
+
+TEST(meshMotion, frame_rotation)
+{
+  const std::string smd_info = "centroid: [0.3, 0.5, 0.0] \n"
+                              "mass_matrix: [7000.0, -90.0, 60.0, -90.0, 6400.0, 1800.0, 60.0, 1800.0, 7800] \n"
+                              "stiffness_matrix: [131000.0, 7700.0, -97000.0, 7700.0, 66000.0, -31000.0, -97000.0, -31000.0, 4800000.0] \n"
+                              "damping_matrix: [300.0, 8.0, -70.0, 8.0, 200.0, 20.0, -70.0, 20.0, 3700.0] \n"
+                              "x_init: [0.1, 0.2, 0.0] \n"
+                              "xdot_init: [0.1, 0.2, 0.5235987755982988] \n"
+                              "xdot_nm1:  [0.1, 0.2, 0.5235987755982988] \n"
+                              "loads_scale: 0.75 \n"
+                              "alpha : -0.05 \n";
+
+  YAML::Node motion_def = YAML::Load(smd_info);
+  
+  // initialize an smd_ object for use in the following
+  // make the smd object the first of an array/list
+
+  int i = 0;
+  int num_motions = 1;
+
+  const double time = 3.5;
+  const double dt = 1.0;
+
+  sierra::nalu::mm::ThreeDVecType xyz{2.5+0.3, 1.5+0.5, 6.5};
+  sierra::nalu::mm::ThreeDVecType cxyz{0.0, 0.0, 0.0};
+
+  // Below here are lines copied from FrameSMD with minimal edits.
+
+  std::vector<std::unique_ptr<SMD>> smd_;
+  smd_.resize(num_motions);
+  smd_[i].reset(new AirfoilSMD(motion_def));
+
+  std::vector<std::unique_ptr<NgpMotion>> motionKernels_;
+  motionKernels_.resize(num_motions); 
+  motionKernels_[i].reset(new MotionAirfoilSMDKernel(motion_def));
+
+  auto ngpKernels = nalu_ngp::create_ngp_view<NgpMotion>(motionKernels_);
+
+  NgpMotion* kernel = ngpKernels(i);
+
+
+  // Additional lines not in the FrameSMD - get some state values for the np1 state
+  smd_[i]->setup(dt);
+  smd_[i]->predict_states();
+
+  // Inputs for the motion
+  vs::Vector trans_disp = smd_[i]->get_trans_disp();
+  const double rot_angle = smd_[i]->get_rot_disp();
+  vs::Vector axis = smd_[i]->get_rot_axis();
+  vs::Vector origin = smd_[i]->get_origin(); 
+
+  // Generate Transformation
+  mm::TransMatType currTransMat = kernel->build_transformation(time, trans_disp, origin, axis, rot_angle);
+
+  // Generate velocity part of unit test
+  vs::Vector trans_vel = smd_[i]->get_trans_vel();
+  vs::Vector rot_vel = smd_[i]->get_rot_vel();
+
+  std::vector<double> norm = transform(currTransMat, xyz);
+  for(int d = 0; d < 3; ++d){
+    cxyz[d] = norm[d];
+  }
+
+  mm::ThreeDVecType vel =
+      kernel->compute_velocity(time, cxyz, origin+trans_disp, trans_vel, rot_vel);
+
+  // Check results of unit test
+ 
+  const double gold_norm_x = 1.6150635094610968 + 0.3;
+  const double gold_norm_y = 2.949038105676658 + 0.5;
+  const double gold_norm_z = 6.5;
+
+  EXPECT_NEAR(norm[0], gold_norm_x, testTol);
+  EXPECT_NEAR(norm[1], gold_norm_y, testTol);
+  EXPECT_NEAR(norm[2], gold_norm_z, testTol);
+
+  const double gold_norm_vx = -1.2346732310857051;
+  const double gold_norm_vy = 0.9409255209476621;
+  const double gold_norm_vz = 0.0;
+
+  EXPECT_NEAR(vel[0], gold_norm_vx, testTol);
+  EXPECT_NEAR(vel[1], gold_norm_vy, testTol);
+  EXPECT_NEAR(vel[2], gold_norm_vz, testTol);
+}
+
+} // End nalu namespace
+} // End seirra namespace
 
 TEST(meshMotion, rotation_angle)
 {

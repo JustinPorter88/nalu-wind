@@ -232,6 +232,8 @@ FrameSMD::update_coordinates_velocity(const double time)
         
         currCoords.get(mi, d) = modelCoords.get(mi, d) + displacement.get(mi, d);
 
+        cX[d] = currCoords.get(mi, d);
+
       } // end for loop - d index
 
       // compute velocity vector on current node resulting from all
@@ -243,9 +245,11 @@ FrameSMD::update_coordinates_velocity(const double time)
         vs::Vector trans_vel = smd_[i]->get_trans_vel();
         vs::Vector rot_vel = smd_[i]->get_rot_vel();
         vs::Vector origin = smd_[i]->get_origin();
+        vs::Vector trans_disp = smd_[i]->get_trans_disp();
+
         // evaluate velocity associated with motion
         mm::ThreeDVecType mm_vel =
-            kernel->compute_velocity(time, mX, origin, trans_vel, rot_vel);
+            kernel->compute_velocity(time, cX, origin+trans_disp, trans_vel, rot_vel);
 
         for (int d = 0; d < nDim; ++d)
             meshVelocity.get(mi, d) += mm_vel[d] * mesh_ramp_func;
