@@ -198,6 +198,15 @@ AirfoilSMD::update_timestep(vs::Vector F_np1, vs::Vector M_np1) {
   vs::Tensor Left;
   vs::Vector right;
 
+  // copy the forces to f_np1_ so that they are saved to the nc file
+  // Create force vector from appropriate force and moment entries
+  temp_fnp1[0] = F_np1[0];
+  temp_fnp1[1] = F_np1[1];
+  temp_fnp1[2] = M_np1[2];
+
+  f_np1_ = temp_fnp1;
+
+
   NaluEnv::self().naluOutputP0() << "AirfoilSMD: Update timestep: tstep_ = " << tstep_ << std::endl;
 
   x_np1_[0] = amp_[0] * stk::math::sin(2.0 * M_PI * freq_[0] * (tstep_ + 1) * dt_);
